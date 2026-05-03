@@ -1,8 +1,14 @@
 {
+    "functions": {
+        "api/proxy.js": {
+            "memory": 128,
+            "maxDuration": 30
+        }
+    },
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://perfect-due.com/:path*"
+            "destination": "/api/proxy?path=:path*"
         },
         {
             "source": "/(.*)",
