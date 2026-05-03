@@ -11,12 +11,19 @@ export default async function handler(req, res) {
     if (key !== 'path') url.searchParams.append(key, value);
   });
 
-  // Forward headers but strip browser-specific ones
-  const headers = { ...req.headers };
-  delete headers['host'];
-  delete headers['origin'];
-  delete headers['referer'];
-  headers['Content-Type'] = headers['content-type'] || 'application/json';
+  // Forward headers but strip browser-specific and length headers
+  const headers = {};
+  for (const [key, value] of Object.entries(req.headers)) {
+    const lowerKey = key.toLowerCase();
+    if (!['host', 'origin', 'referer', 'content-length', 'connection', 'host'].includes(lowerKey)) {
+      headers[key] = value;
+    }
+  }
+
+  // Ensure content-type is set for POST/PATCH/PUT
+  if (!headers['content-type'] && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   try {
     const fetchOptions = {
@@ -24,8 +31,9 @@ export default async function handler(req, res) {
       headers,
     };
 
-    if (!['GET', 'HEAD'].includes(req.method)) {
-      fetchOptions.body = JSON.stringify(req.body);
+    if (!['GET', 'HEAD'].includes(req.method) && req.body) {
+      // Only stringify if it's not already a string
+      fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     }
 
     const response = await fetch(url.toString(), fetchOptions);
